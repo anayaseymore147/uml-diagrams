@@ -1,0 +1,27 @@
+@startuml
+
+' Участники процесса
+actor "Клиент" as client
+participant "Мобильное приложение" as app
+participant "Система транзакций" as auth
+participant "База данных" as db
+participant "Получатель" as recipient
+
+' Процесс перевода
+note over client, app: Клиент вводит сумму и номер\nсчёта получателя
+client -> app: Запрос на перевод 5 000 ₽
+note over auth: Проверка лимитов и правил\nперевода
+app -> auth: Проверить доступность средств
+auth -> db: Запрос баланса (клиент)
+db --> auth: Баланс = 15 000 ₽
+auth --> app: Средств достаточно
+app -> auth: Подтвердить перевод
+note over db: Транзакция атомарно списывает\nи зачисляет средства
+auth -> db: Списать 5 000 ₽ (клиент)
+auth -> db: Зачислить 5 000 ₽ (получатель)
+db --> auth: Успешно
+auth --> app: Перевод выполнен
+app --> client: Уведомление об успехе
+app -> recipient: SMS-уведомление
+
+@enduml
