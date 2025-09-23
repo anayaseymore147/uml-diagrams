@@ -1,0 +1,108 @@
+@startuml
+skinparam backgroundColor #FFFFFF
+skinparam participant {
+    BackgroundColor #F5F5F5
+    BorderColor #888888
+    FontColor #000000
+}
+skinparam database {
+    BackgroundColor #FFF59D
+    BorderColor #888800
+}
+skinparam actor {
+    BackgroundColor #FFFFFF
+    BorderColor #000000
+}
+skinparam note {
+    BackgroundColor #FFFFCC
+    BorderColor #999999
+}
+
+actor Customer #FFFFFF
+participant "Web UI" as WebUI #E6F3FF
+participant "Order Controller" as OrderController #E6FFE6
+participant "Payment Service" as PaymentService #FFF0F0
+database "Database" as DB #FFFFCC
+participant "Notification Service" as NotifService #F0F0FF
+
+== 1. Оформление заказа ==
+activate Customer #DDDDFF
+Customer -[#0000FF]-> WebUI : initiateOrder(orderDetails)
+deactivate Customer
+
+activate WebUI #99CCFF
+WebUI -[#0000FF]-> OrderController : processOrder(orderDetails)
+deactivate WebUI
+
+activate OrderController #99FF99
+OrderController -[#0000FF]-> DB : saveOrder(orderDetails)
+deactivate OrderController
+
+activate DB #FFFF99
+DB -[#008000]-> OrderController : orderSaved
+deactivate DB
+note right of DB : Сохранен заказ в статусе "Ожидание оплаты"
+
+== 2. Оплата ==
+activate OrderController #99FF99
+OrderController -[#0000FF]-> PaymentService : processPayment(paymentInfo)
+deactivate OrderController
+
+alt Успешная оплата
+    activate PaymentService #FFCCCC
+    PaymentService -[#008000]-> OrderController : paymentSuccess(paymentConfirmation)
+    deactivate PaymentService
+
+    activate OrderController #99FF99
+    OrderController -[#0000FF]-> NotifService : sendOrderNotification(orderId)
+    deactivate OrderController
+else Ошибка оплаты
+    activate PaymentService #FFCCCC
+    PaymentService -[#FF0000]-> OrderController : paymentFailure(errorMessage)
+    deactivate PaymentService
+    note right of OrderController : Заказ сохраняется как предварительный
+end
+
+== 3. Подтверждение заказа ==
+activate OrderController #99FF99
+OrderController -[#0000FF]-> WebUI : orderConfirmation(confirmationDetails)
+deactivate OrderController
+
+activate WebUI #99CCFF
+WebUI -[#0000FF]-> Customer : displayConfirmation(confirmationDetails)
+deactivate WebUI
+
+== 4. Изменение корзины ==
+activate Customer #DDDDFF
+Customer -[#0000FF]-> WebUI : modifyCart(action, itemDetails)
+deactivate Customer
+
+note right of WebUI : Действие: добавление,\nудаление, изменение количества
+
+activate WebUI #99CCFF
+WebUI -[#0000FF]-> OrderController : updateCart(action, itemDetails)
+deactivate WebUI
+
+activate OrderController #99FF99
+OrderController -[#0000FF]-> DB : updateCartInDB(cartData)
+deactivate OrderController
+
+activate DB #FFFF99
+DB -[#008000]-> OrderController : cartUpdateConfirmation
+deactivate DB
+
+activate OrderController #99FF99
+OrderController -[#0000FF]-> WebUI : notifyCartUpdate(cartStatus)
+deactivate OrderController
+
+== 5. Уведомление менеджера ==
+activate NotifService #F0F0FF
+NotifService -[#0000FF]-> WebUI : managerNotification(orderId, status)
+deactivate NotifService
+
+note left of WebUI
+  Менеджер получает уведомление
+  о новом заказе
+end note
+
+@enduml

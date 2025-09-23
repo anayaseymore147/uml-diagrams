@@ -1,0 +1,64 @@
+@startuml
+skinparam backgroundColor #FFFFFF
+skinparam participant {
+    BackgroundColor #F5F5F5
+    BorderColor #888888
+    FontColor #000000
+}
+skinparam database {
+    BackgroundColor #FFF59D
+    BorderColor #888800
+}
+skinparam actor {
+    BackgroundColor #FFFFFF
+    BorderColor #000000
+}
+skinparam note {
+    BackgroundColor #FFFFCC
+    BorderColor #999999
+}
+
+actor Customer #FFFFFF
+participant "Web UI" as WebUI #E6F3FF
+participant "Order Controller" as OrderController #E6FFE6
+participant "Payment Service" as PaymentService #FFF0F0
+database "Database" as DB #FFFFCC
+participant "Notification Service" as NotifService #F0F0FF
+
+== 1. Оформление заказа ==
+Customer -> WebUI : initiateOrder(orderDetails)
+WebUI -> OrderController : processOrder(orderDetails)
+OrderController -> DB : saveOrder(orderDetails)
+DB --> OrderController : orderSaved
+note right of DB : Сохранен заказ в статусе "Ожидание оплаты"
+
+== 2. Оплата ==
+OrderController -> PaymentService : processPayment(paymentInfo)
+
+alt Успешная оплата
+    PaymentService --> OrderController : paymentSuccess(paymentConfirmation)
+    OrderController -> NotifService : sendOrderNotification(orderId)
+else Ошибка оплаты
+    PaymentService --> OrderController : paymentFailure(errorMessage)
+    note right of OrderController : Заказ сохраняется как предварительный
+end
+
+== 3. Подтверждение заказа ==
+OrderController -> WebUI : orderConfirmation(confirmationDetails)
+WebUI --> Customer : displayConfirmation(confirmationDetails)
+
+== 4. Изменение корзины ==
+Customer -> WebUI : modifyCart(action, itemDetails)
+note right of WebUI : Действие: добавление,\nудаление, изменение количества
+WebUI -> OrderController : updateCart(action, itemDetails)
+OrderController -> DB : updateCartInDB(cartData)
+DB --> OrderController : cartUpdateConfirmation
+OrderController -> WebUI : notifyCartUpdate(cartStatus)
+
+== 5. Уведомление менеджера ==
+ NotifService  -> WebUI : managerNotification(orderId, status)
+note left of WebUI
+  Менеджер получает уведомление
+  о новом заказе
+end note
+@enduml
