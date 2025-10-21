@@ -1,0 +1,106 @@
+@startuml
+skinparam linetype ortho
+
+' ==== Основной абстрактный класс User ====
+abstract class User {
+  - id: int
+  - name: String
+  - email: String
+  - passwordHash: String
+}
+
+' ==== Студент наследует пользователя ====
+class Student {
+  - studentId: int
+  - profile: Profile <<reference>>
+}
+User <|-- Student : наследование (студент — подтип пользователя)
+
+' ==== Преподаватель наследует пользователя ====
+class Instructor {
+  - instructorId: int
+  - bio: String
+  - profile: Profile <<reference>>
+}
+User <|-- Instructor : наследование (преподаватель — подтип пользователя)
+
+' ==== Профиль пользователя ====
+class Profile {
+  - photoUrl: String
+  - phoneNumber: String
+  - address: String
+}
+Student --> Profile : принадлежит одному профилю (ассоциация, 1)
+Instructor --> Profile : принадлежит одному профилю (ассоциация, 1)
+
+' ==== Курс ====
+class Course {
+  - courseId: int
+  - title: String
+  - description: String
+  - price: Decimal
+  - language: String
+}
+Course --> Instructor : ведется преподавателем (ассоциация, 1)
+
+' ==== Enrollment — ассоциативный класс ====
+class Enrollment {
+  - enrollmentDate: Date
+  - progress: Float
+  - grade: String
+}
+Student "1" -- "0..*" Enrollment : ассоциативный класс (зачисление)
+Course "1" -- "0..*" Enrollment
+
+' ==== Материал курса ====
+class Material {
+  - materialId: int
+  - title: String
+  - contentUrl: String
+  - type: String
+}
+Course "1" -- "0..*" Material : содержит материалы (ассоциация, 0..*)
+
+' ==== Модуль курса ====
+class Module {
+  - moduleId: int
+  - title: String
+  - description: String
+}
+Course *-- "1..*" Module : композиция (при удалении курса удаляются и модули)
+
+' ==== Раздел модуля ====
+class Section {
+  - sectionId: int
+  - title: String
+  - content: String
+}
+Module *-- "1..*" Section : композиция (при удалении модуля удаляются разделы)
+
+' ==== Платежи (опционально) ====
+class Payment {
+  - paymentId: int
+  - amount: Decimal
+  - paymentDate: Date
+  - method: String
+}
+Enrollment --> "0..1" Payment : привязан к оплате (ассоциация, 0..1)
+
+' ==== Процессор оплаты ====
+class PaymentProcessor {
+  - processorName: String
+  + processPayment(amount: Decimal): Boolean
+}
+Course ..> PaymentProcessor : зависимость (использует процессор для оплаты)
+
+' ==== Обратная связь ====
+class Feedback {
+  - feedbackId: int
+  - comment: String
+  - rating: int
+  - date: Date
+}
+Student "1" -- "0..*" Feedback : пишет отзывы (ассоциация, 0..*)
+Course "1" -- "0..*" Feedback : получает отзывы (ассоциация, 0..*)
+
+@enduml
