@@ -1,0 +1,44 @@
+@startuml
+left to right direction
+skinparam actorStyle awesome
+
+' === Акторы ===
+actor Client as "Клиент"
+actor "Кредитный менеджер" as CreditManager
+actor "Служба безопасности" as SecurityDept
+actor "Бюро кредитных историй (БКИ)" as CreditBureau
+
+' === Обобщение акторов (например, если будет физлицо и юрлицо) ===
+actor "Заявитель-Физлицо" as Individual
+actor "Заявитель-Юрлицо" as LegalEntity
+Individual --|> Client : обобщение
+LegalEntity --|> Client : обобщение
+
+' === Основной вариант использования ===
+usecase SubmitApplication as "Подать заявку на кредит"
+usecase ReviewApplication as "Рассмотреть кредитную заявку"
+usecase CheckCreditHistory as "Проверить кредитную историю"
+usecase VerifyIdentity as "Проверить личность клиента"
+usecase EvaluateRisk as "Оценить кредитные риски"
+usecase ApproveLoan as "Одобрить/отклонить заявку"
+usecase RequestAdditionalDocs as "Запросить доп. документы"
+usecase NotifyClient as "Уведомить клиента"
+
+' === Связи ===
+Client --> SubmitApplication : инициирует
+SubmitApplication --> ReviewApplication : <<include>> обязательно входит
+ReviewApplication --> CheckCreditHistory : <<include>> включает проверку истории
+ReviewApplication --> VerifyIdentity : <<include>> включает верификацию личности
+
+CreditManager --> ReviewApplication : выполняет рассмотрение
+CreditManager --> ApproveLoan : принимает решение
+CreditManager --> RequestAdditionalDocs : <<extend>> при нехватке данных
+
+ReviewApplication --> EvaluateRisk : <<include>> часть анализа
+
+EvaluateRisk --> CreditBureau : использует данные
+VerifyIdentity --> SecurityDept : обращается за проверкой
+
+ApproveLoan --> NotifyClient : <<include>> уведомление клиента
+
+@enduml
